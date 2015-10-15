@@ -1,0 +1,11 @@
+package transactions;
+
+public class orderList {
+	
+	private int ol_i_id;
+	private int ol_supply_w_id;
+	private int ol_quantity;
+	private int ol_amount;
+	private int ol_delivery_d;
+	
+}

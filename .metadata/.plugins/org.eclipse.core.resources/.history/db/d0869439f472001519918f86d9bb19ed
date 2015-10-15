@@ -1,0 +1,10 @@
+package transactions;
+
+public class orderList {
+	ol_i_id int," +
+	"ol_supply_w_id int," +
+    "ol_quantity int," +
+    "ol_amount int," +
+    "ol_delivery_d int
+	
+}
