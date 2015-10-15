@@ -10,6 +10,8 @@ public class ThreadClient {
 	private static Session session;
 	private static String keyspace;
 	private static int nodeCount;
+	public static int totalTransactions=0;
+	public static float totalTime=0;
 
 	// function to connect to the cluster
 	public void connect(String node) {
