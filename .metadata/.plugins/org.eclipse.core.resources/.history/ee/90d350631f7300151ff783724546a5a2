@@ -1,0 +1,39 @@
+package ThreadTransaction;
+
+import com.datastax.driver.core.Session;
+
+public class TransThread extends Thread {
+	private Thread t;
+	private String threadName;
+	private Session session;
+
+	TransThread(String name, Session session) {
+		threadName = name;
+		this.session = session;
+		System.out.println("Creating " + threadName);
+	}
+
+	public void run() {
+		System.out.println("Running " + threadName);
+		try {
+			readFile();
+		} catch (InterruptedException e) {
+			System.out.println("Thread " + threadName + " interrupted.");
+		}
+		System.out.println("Thread " + threadName + " exiting.");
+	}
+
+	private void readFile() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void start() {
+		System.out.println("Starting " + threadName);
+		if (t == null) {
+			t = new Thread(this, threadName);
+			t.start();
+		}
+	}
+
+}
