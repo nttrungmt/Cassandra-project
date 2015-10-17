@@ -35,13 +35,10 @@ public class TransThread extends Thread {
 		// File name
 		String filename = String.valueOf(threadNum) + ".txt";
 
-		BufferedReader br = null;
 		Transaction transaction = new Transaction(session, keyspace, node);
 
-		try {
+		try (BufferedReader br = new BufferedReader(new FileReader(filename))){
 			String sCurrentLine;
-
-			br = new BufferedReader(new FileReader(filename));
 
 			while ((sCurrentLine = br.readLine()) != null) {
 				System.out.println("Reading file:" + filename + ", "
@@ -116,13 +113,7 @@ public class TransThread extends Thread {
 
 		} catch (IOException e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				br.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		} 
 		return count;
 	}
 
@@ -134,30 +125,32 @@ public class TransThread extends Thread {
 
 		} catch (Exception e) {
 			System.out.println("Thread " + threadName + " interrupted.");
+		} finally {
+			System.out.println("Thread " + threadName + " exiting.");
+			System.err.println("Total number of transactions processed : "
+					+ count);
+			this.endTime = System.currentTimeMillis();
+			float totalTime = endTime - startTime;
+			System.err
+					.println("Total elapsed time for processing the transactions (in seconds): "
+							+ totalTime);
+			float throughput = count / totalTime;
+			System.err
+					.println("Transaction throughput (number of transactions processed per second): "
+							+ throughput);
+			ThreadClient.totalTransactions += count;
+			ThreadClient.totalTime += totalTime;
+
+			System.err
+					.println("Overall total number of transactions processed : "
+							+ ThreadClient.totalTransactions);
+			System.err
+					.println("Overall Total elapsed time for processing the transactions (in seconds): "
+							+ ThreadClient.totalTime);
+			System.err
+					.println("Transaction throughput (number of transactions processed per second): "
+							+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
 		}
-		System.out.println("Thread " + threadName + " exiting.");
-		System.err.println("Total number of transactions processed : " + count);
-		this.endTime = System.currentTimeMillis();
-		float totalTime = endTime - startTime;
-		System.err
-				.println("Total elapsed time for processing the transactions (in seconds): "
-						+ totalTime);
-		float throughput = count / totalTime;
-		System.err
-				.println("Transaction throughput (number of transactions processed per second): "
-						+ throughput);
-		ThreadClient.totalTransactions += count;
-		ThreadClient.totalTime += totalTime;
-
-		System.err.println("Overall total number of transactions processed : "
-				+ ThreadClient.totalTransactions);
-		System.err
-				.println("Overall Total elapsed time for processing the transactions (in seconds): "
-						+ ThreadClient.totalTime);
-		System.err
-				.println("Transaction throughput (number of transactions processed per second): "
-						+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
-
 	}
 
 	public void start() {

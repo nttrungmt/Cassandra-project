@@ -1,0 +1,223 @@
+Commands:
+javac -classpath cassandra-java-driver-2.0.2/cassandra-driver-core-2.0.2.jar:. ThreadClient.java
+  When we run the file:
+
+java -classpath cassandra-java-driver-2.0.2/*:cassandra-java-driver-2.0.2/lib/*:. ThreadClient
+
+// New Order
+
+
+CREATE KEYSPACE d8keyspace WITH replication = {'class':'SimpleStrategy', 'replication_factor':2};
+
+
+create type d8keyspace.orderitemlist (
+ol_i_id int,
+i_name varchar,
+ol_supply_w_id int,
+ol_quantity float,
+ol_amount double,
+s_quantity float,
+);
+
+
+create type d8keyspace.cname (
+c_first varchar,
+c_middle varchar,
+c_last varchar,
+);
+
+create type d8keyspace.address (
+street1 varchar,
+street2 varchar,
+city varchar,
+state varchar,
+zip text,
+);
+
+
+
+
+CREATE TABLE d8keyspace.neworder (
+    w_id int,
+    d_id int,
+    c_id int,
+    o_id int,
+    c_credit text,
+    c_discount double,
+    c_name frozen<cname>,
+    d_next_o_id int,
+    d_tax double,
+    i_id int,
+    i_price double,
+    new_order_items list<frozen<orderitemlist>>,
+    o_entry_d timestamp,
+    s_order_cnt int,
+    s_remote_cnt int,
+    s_ytd double,
+    w_tax double,
+    PRIMARY KEY ((w_id, d_id, c_id), o_id)
+) WITH CLUSTERING ORDER BY (o_id ASC);
+
+
+
+INSERT INTO d8keyspace.newOrder (w_id,
+    d_id,
+    c_id ,
+    o_id ,
+    c_credit ,
+    c_discount ,
+    c_name,
+    d_next_o_id ,
+    d_tax ,
+    i_id ,
+    i_price ,
+    new_order_items,
+    o_entry_d ,
+    s_order_cnt ,
+    s_remote_cnt ,
+    s_ytd ,
+    w_tax)
+
+VALUES (1,2,3,4, 'yes', 1.0, {c_first:'abc', c_middle:'a', c_last: 'd'}, 
+5, 2.0, 6, 3.0, 
+[ {ol_i_id: 1, i_name :'ab', ol_supply_w_id: 2,
+ol_quantity:3.0,
+ol_amount:4.0,
+s_quantity :1 },
+{ol_i_id: 2, i_name :'asb', ol_supply_w_id: 2,
+ol_quantity:34.0,
+ol_amount:4.0,
+s_quantity :1 } ],
+dateOf(now()),
+5,
+7,
+8.0,
+9.0 );
+
+select * from d8keyspace.neworder where w_id = 1 and d_id = 2 and c_id = 3;
+
+
+
+
+
+
+// Payment Table
+
+CREATE TABLE d8keyspace.payment (
+w_id int,
+c_id int,
+d_id int,
+c_name frozen<cname>,
+c_address frozen<address>,
+c_phone text,
+c_since timestamp,
+c_credit text,
+c_credit_lim double,
+c_discount double,
+c_balance double,
+w_address frozen<address>,
+d_address frozen<address>,
+PRIMARY KEY ((w_id, d_id, c_id)));
+
+
+INSERT INTO d8keyspace.payment (
+w_id ,
+c_id ,
+d_id ,
+c_name,
+c_address,
+c_phone,
+c_since ,
+c_credit ,
+c_credit_lim ,
+c_discount ,
+c_balance ,
+w_address,
+d_address)
+
+VALUES
+(1,2,3, 
+{c_first:'abc', c_middle:'a', c_last: 'd'}, 
+{street1:'ab',
+street2: 'cd',
+city: 'ef',
+state: 'gh',
+zip: '123'},
+'2389', 
+dateOf(now()),
+'ad', 2.0, 
+6.0, 3.0,
+{street1:'aeb',
+street2: 'cd',
+city: 'ef',
+state: 'gh1',
+zip: '123'},
+{street1:'ab',
+street2: 'cd',
+city: 'ef',
+state: 'gh2',
+zip: '123'}
+);
+
+
+
+
+// Order Status
+create type d8keyspace.orderdeliverylist (
+ol_i_id int,
+i_name varchar,
+ol_supply_w_id int,
+ol_quantity double,
+ol_amount double,
+s_quantity double,
+ol_delivery_d timestamp );
+		
+
+
+CREATE TABLE d8keyspace.orderStatus (
+c_id int,
+w_id int,
+d_id int,
+o_id int, 
+c_name frozen<cname>,
+c_balance double,
+o_entry_id timestamp,
+o_carrier_id int,
+orderList list <frozen <orderdeliverylist> >,
+PRIMARY KEY ((c_id, d_id, w_id),o_id)
+)
+WITH CLUSTERING ORDER BY (o_id DESC);
+
+
+INSERT INTO d8keyspace.orderstatus ( c_id, o_id, c_balance , c_name, o_carrier_id , o_entry_id, orderlist) VALUES (1,1,0,'abc', 1, dateOf(now()), null);
+
+update orderstatus SET c_balance = 20.0, o_carrier_id = 3 where c_id = 1;
+
+
+
+
+
+
+// itemStock  table
+
+create table d8keyspace.itemStock (
+d_id int,
+w_id int,
+o_id int,
+o_entry_d timestamp,
+c_name frozen<cname>,
+stocklist list<frozen<orderitemlist>>,
+PRIMARY KEY ((d_id, w_id),o_id)
+)
+WITH CLUSTERING ORDER BY (o_id DESC);
+
+
+
+
+
+// tables in beginning
+
+
+
+
+

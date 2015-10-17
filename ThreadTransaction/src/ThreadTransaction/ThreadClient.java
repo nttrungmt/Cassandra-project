@@ -76,7 +76,7 @@ public class ThreadClient {
 		}
 
 		ThreadClient client = new ThreadClient();
-		client.connect("192.168.8.128");
+		//client.connect("192.168.8.128");
 		for (int j = 0; j<clientCount; j++)
 		{
 			String name = "Thread-"+j;
