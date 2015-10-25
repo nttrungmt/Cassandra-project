@@ -1,13 +1,8 @@
-//package threadtrans;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
@@ -35,7 +30,6 @@ public class TransThread extends Thread {
 	// Function to read the file and call transactions
 	private int readFile() {
 		int count = 0;
-		// File name
 		BufferedReader br = null;
 
 		try {
@@ -67,7 +61,7 @@ public class TransThread extends Thread {
 					int m = Integer.parseInt(words[4]);
 					System.out.println("m:" + m);
 					// read the items in the new order
-					Set<orderDeliveryList> orderSet = new HashSet<orderDeliveryList>();
+					/*Set<orderDeliveryList> orderSet = new HashSet<orderDeliveryList>();
 					for (int j = i + 1; j <= (m + i); j++) {
 						String[] localValues = (myList.get(j)).split(",");
 						orderDeliveryList orderlist = new orderDeliveryList(
@@ -76,9 +70,9 @@ public class TransThread extends Thread {
 								Double.parseDouble(localValues[2]), 0.0, 0.0,
 								null);
 						orderSet.add(orderlist);
-					}
+					}*/
 					i = i + m;
-					transaction.newOrder(w_id, d_id, c_id, m, orderSet);
+					transaction.newOrder(w_id, d_id, c_id, m);//, orderSet);
 					count++;
 				} else if ((words[0]).equals("P")) {
 					// Payment transaction -> C_W_ID, C_D_ID, C_ID, PAYMENT.
@@ -171,6 +165,11 @@ public class TransThread extends Thread {
 			System.err
 					.println("Transaction throughput (number of transactions processed per second): "
 							+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
+			ThreadClient.Threadcount++;
+			if(ThreadClient.Threadcount == ThreadClient.clientCount) {
+				ThreadClient.close();
+				System.exit(0);
+			}
 		}
 	}
 

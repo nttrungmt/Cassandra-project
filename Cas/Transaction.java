@@ -1,7 +1,4 @@
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.TreeSet;
 
 import com.datastax.driver.core.BoundStatement;
@@ -28,7 +25,6 @@ public class Transaction {
 	private PreparedStatement stock_d_sel;
 	private PreparedStatement stock_o_sel;
 	private PreparedStatement stock_s_sel;
-	private PreparedStatement popular_d_sel;
 	private PreparedStatement popular_o_sel;
 	private PreparedStatement popular_s_sel;
 
@@ -44,14 +40,14 @@ public class Transaction {
 		payment_c_up = session.prepare("UPDATE " + keyspace + ".customer SET c_balance = c_balance + ?, c_ytd_payment = c_ytd_payment+ ?, c_payment_cnt = c_payment_cnt + 1 WHERE w_id = ? and d_id = ? and c_id = ?;");
 		payment_cm_sel = session.prepare("SELECT c_name, c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, w_addr, d_addr FROM " + keyspace + ".customermaster WHERE w_id = ? and d_id = ? and c_id = ?;");
 		payment_c_sel = session.prepare("SELECT c_balance FROM " + keyspace + ".customer WHERE w_id = ? and d_id = ? and c_id = ?;");
-
+		
 		// Delivery Prepared Statements
 		del_o_sel = session.prepare("SELECT o_id,c_id,ol_id,ol_amount FROM " + keyspace + ".orders WHERE w_id = ? and d_id =? and o_carrier_id = ?;");
-		del_o_up = session.prepare("UPDATE " + keyspace + ".orders SET o_carrier_id = ?, ol_delivery_d = dateOf(now()) WHERE w_id =? and d_id = ? and o_id =? and c_id = ? and ol_id = ?;");
+		del_o_up = session.prepare("UPDATE " + keyspace + ".orders SET o_carrier_id = ?, ol_delivery_d = dateOf(now()) WHERE w_id =? and d_id = ? and o_id =? and ol_id = ?;");
 		del_c_up = session.prepare("UPDATE " + keyspace + ".customer SET c_balance = c_balance + ?, c_delivery_cnt = c_delivery_cnt+1 WHERE w_id = ? and d_id = ? and c_id = ?;");
 		
 		//Order Status Prepared Statements
-		orderst_o_sel = session.prepare("SELECT c_name, o_id, o_entry_d, o_carrier_id, i_id, ol_supply_w_id, ol_qty, ol_amount, ol_delivery_d FROM " + keyspace + ".orders WHERE w_id = ? and d_id = ? and c_id = 2;");
+		orderst_o_sel = session.prepare("SELECT c_name, o_id, o_entry_d, o_carrier_id, i_id, ol_supply_w_id, ol_qty, ol_amount, ol_delivery_d FROM " + keyspace + ".orders WHERE w_id = ? and d_id = ? and c_id = ?;");
 		orderst_c_sel = session.prepare("SELECT c_balance FROM " + keyspace + ".customer WHERE w_id = ? and d_id = ? and c_id = ?;");
 		
 		// stock level Prepared Statements
@@ -61,12 +57,12 @@ public class Transaction {
 		
 		// Popular Item Prepared Statements
 		popular_o_sel = session.prepare("SELECT o_id, ol_id, ol_qty, o_entry_d, c_name, i_name, ol_qty FROM " + keyspace + ".orders WHERE w_id = ? AND d_id = ? and o_id >=?;");
-		popular_s_sel = session.prepare("");
+		//popular_s_sel = session.prepare("");
 	}
 
 	// New Order Transaction function
-	void newOrder(int w_id, int d_id, int c_id, int m,
-			Set<orderDeliveryList> orderSet) {
+	void newOrder(int w_id, int d_id, int c_id, int m) {
+			/*Set<orderDeliveryList> orderSet) {
 
 		String c_name = null;
 		int o_id = 0;
@@ -78,7 +74,7 @@ public class Transaction {
 				+ ", m:" + m);
 
 		// populate set
-		/*
+		
 		 * for (orderList s : orderSet) { System.out.println("ol_i_id: " +
 		 * s.get_ol_i_id() + ", ol_supply_w_id:" + s.get_ol_supply_w_id() +
 		 * ", ol_quantity" + s.get_ol_quantity() + ", ol_amount:" +
@@ -89,9 +85,9 @@ public class Transaction {
 
 
 	// Payment Transaction function
-	void payment(int w_id, int d_id, int c_id, double payment) {
+	void payment(int w_id, int d_id, int c_id, double pay) {
 		System.out.println("Payment transaction!");
-		payment = payment*100;
+		Long payment = new Long((long) (pay*100));
 		System.out.println("w_id:" + w_id + ", d_id:" + d_id + ", c_id:" + c_id
 				+ ", payment:" + payment);
 		BoundStatement bound_w_up = new BoundStatement(payment_w_up);
@@ -110,7 +106,7 @@ public class Transaction {
 		BoundStatement bound_c_sel = new BoundStatement(payment_c_sel);
 		results = session.execute(bound_c_sel.bind(w_id, d_id, c_id));
 		System.out.println(results.all());
-		System.out.println(payment/100);
+		System.out.println(pay);
 
 	}
 
@@ -137,25 +133,26 @@ public class Transaction {
 			for (Row row : results) {
 				sortedSet.add(row.getInt("o_id"));
 			}
-			int o_id = sortedSet.first();
+			if(!(sortedSet.isEmpty())) {
+				int o_id = sortedSet.first();
 			
-			int c_id = 0;
-			double B = 0.0;
+				int c_id = 0;
+				double B = 0.0;
 			
-			BoundStatement bound_o_up = new BoundStatement(del_o_up);
-			Iterator<Row> it = results.iterator();
-			while (it.hasNext())  {
-				Row row = it.next();
-				if(row.getInt("o_id") == o_id) {
-					B = B + row.getDouble("ol_amount");
-					c_id = row.getInt("c_id");
+				BoundStatement bound_o_up = new BoundStatement(del_o_up);
+				Iterator<Row> it = results.iterator();
+				while (it.hasNext())  {
+					Row row = it.next();
+					if(row.getInt("o_id") == o_id) {
+						B = B + row.getDouble("ol_amount");
+						c_id = row.getInt("c_id");
 
-					session.execute(bound_o_up.bind(carrier_id, w_id, i, o_id, c_id, row.getInt("ol_id")));
+						session.execute(bound_o_up.bind(carrier_id, w_id, i, o_id, c_id, row.getInt("ol_id")));
+					}
 				}
+				BoundStatement bound_c_up = new BoundStatement(del_c_up);
+				session.execute(bound_c_up.bind(B, w_id, i, c_id));
 			}
-			
-			BoundStatement bound_c_up = new BoundStatement(del_c_up);
-			session.execute(bound_c_up.bind(B, w_id, i, c_id));
 		}
 
 	}
@@ -189,16 +186,16 @@ public class Transaction {
 		BoundStatement bound_d_sel = new BoundStatement(stock_d_sel);
 		ResultSet results = session.execute(bound_d_sel.bind(w_id, d_id));
 		for (Row row : results) {
-			next_oid = row.getInt("d_next_oid");
+			next_oid = (int)(row.getLong("d_next_oid"));
 		}
 
 		// query to get i_id
-		int range = next_oid - l;
+		int range =  next_oid - l;
 		BoundStatement bound_o_sel = new BoundStatement(stock_o_sel);
 		results = session.execute(bound_o_sel.bind(w_id, d_id, range));
 		
 		// query to get s_qty
-		String query_s_sel = "SELECT s_qty FROM stocks WHERE w_id= ? and i_id IN (";
+		String query_s_sel = "SELECT s_qty FROM " + keyspace + ".stocks WHERE w_id= ? and i_id IN (";
 		int i = 0;
 		for (Row row : results) {
 			if(i!=0) {
