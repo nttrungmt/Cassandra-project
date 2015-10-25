@@ -37,28 +37,25 @@ public class ThreadClient {
 
 		// if the number of arguments are less than 3, return error
 		if (args.length != 3) {
-			System.out.println("Please enter three parameters: X, Y and Z!");
-			System.out
+			System.err.println("Please enter three parameters: X, Y and Z!");
+			System.err
 					.println("X: Database (D8 or D40); Y: Nodes(1 or 2) and Z = No. of clients (1 to 100)!");
 			System.exit(-1);
 		}
 
 		// Validating the entered database
 		if (!(args[0]).equals("D8") && !(args[0]).equals("D40")) {
-			System.out.println("Value received:" + args[0]
-					+ ".Incorrect value of database. Please choose D8 or D40");
+			System.err.println("Incorrect value of database. Please choose D8 or D40");
 			System.exit(-1);
 		}
 		else
 		{
 			keyspace = (args[0]).toLowerCase() +"key";
-			System.out.println(keyspace);
 		}
 
 		// Validating the entered Nodes
 		if (!(args[1]).equals("1") && !(args[1]).equals("2")) {
-			System.out.println("Value received:" + args[1]
-					+ ".Incorrect value of Nodes. Please choose 1 or 2");
+			System.err.println("Incorrect value of Nodes. Please choose 1 or 2");
 			System.exit(-1);
 		}
 		else
@@ -69,10 +66,8 @@ public class ThreadClient {
 		// Validating the entered client number
 		clientCount = Integer.parseInt(args[2]);
 		if (clientCount < 1 || clientCount > 100) {
-			System.out
-					.println("Value received:"
-							+ args[2]
-							+ ".Incorrect value of Clients. Please choose a value between 1 to 100.");
+			System.err
+					.println("Incorrect value of Clients. Please choose a value between 1 to 100.");
 			System.exit(-1);
 		}
 
@@ -85,6 +80,5 @@ public class ThreadClient {
 			Tj.start();
 		}
 
-		//client.close();
 	}
 }

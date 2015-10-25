@@ -24,7 +24,6 @@ public class TransThread extends Thread {
 		this.keyspace = keyspace;
 		this.node = node;
 		this.startTime = System.currentTimeMillis();
-		System.out.println("Creating " + threadName);
 	}
 
 	// Function to read the file and call transactions
@@ -46,8 +45,6 @@ public class TransThread extends Thread {
 			}
 
 			for (int i = 0; i < myList.size(); i++) {
-				System.out.println("Reading file:" + filename + ", "
-						+ myList.get(i));
 				String[] words = (myList.get(i)).split(",");
 
 				if ((words[0]).equals("N")) {
@@ -61,18 +58,18 @@ public class TransThread extends Thread {
 					int m = Integer.parseInt(words[4]);
 					System.out.println("m:" + m);
 					// read the items in the new order
-					/*Set<orderDeliveryList> orderSet = new HashSet<orderDeliveryList>();
-					for (int j = i + 1; j <= (m + i); j++) {
-						String[] localValues = (myList.get(j)).split(",");
-						orderDeliveryList orderlist = new orderDeliveryList(
-								Integer.parseInt(localValues[0]), null,
-								Integer.parseInt(localValues[1]),
-								Double.parseDouble(localValues[2]), 0.0, 0.0,
-								null);
-						orderSet.add(orderlist);
-					}*/
+					/*
+					 * Set<orderDeliveryList> orderSet = new
+					 * HashSet<orderDeliveryList>(); for (int j = i + 1; j <= (m
+					 * + i); j++) { String[] localValues =
+					 * (myList.get(j)).split(","); orderDeliveryList orderlist =
+					 * new orderDeliveryList( Integer.parseInt(localValues[0]),
+					 * null, Integer.parseInt(localValues[1]),
+					 * Double.parseDouble(localValues[2]), 0.0, 0.0, null);
+					 * orderSet.add(orderlist); }
+					 */
 					i = i + m;
-					transaction.newOrder(w_id, d_id, c_id, m);//, orderSet);
+					transaction.newOrder(w_id, d_id, c_id, m);// , orderSet);
 					count++;
 				} else if ((words[0]).equals("P")) {
 					// Payment transaction -> C_W_ID, C_D_ID, C_ID, PAYMENT.
@@ -89,8 +86,9 @@ public class TransThread extends Thread {
 					count++;
 				} else if ((words[0]).equals("O")) {
 					// Order Status transaction -> C_W_ID, C_D_ID, C_ID
-					 transaction.orderStatus(Integer.parseInt(words[1]),
-					 Integer.parseInt(words[2]), Integer.parseInt(words[3]));
+					transaction.orderStatus(Integer.parseInt(words[1]),
+							Integer.parseInt(words[2]),
+							Integer.parseInt(words[3]));
 					count++;
 				} else if ((words[0]).equals("S")) {
 					// Stock level transaction -> W_ID, D_ID, T, L
@@ -118,8 +116,7 @@ public class TransThread extends Thread {
 		} catch (Exception e) {
 			System.out.println("Exception Raised!");
 			e.printStackTrace();
-		} 
-		finally {
+		} finally {
 			try {
 				br.close();
 			} catch (IOException e) {
@@ -133,40 +130,32 @@ public class TransThread extends Thread {
 	}
 
 	public void run() {
-		System.out.println("Running " + threadName);
 		int count = 1;
 		try {
 			count = this.readFile();
 
 		} catch (Exception e) {
-			System.out.println("Thread " + threadName + " interrupted.");
+			System.out.println("Thread-" + threadNum + " interrupted.");
 		} finally {
-			System.out.println("Thread " + threadName + " exiting.");
-			System.err.println("Total number of transactions processed : "
-					+ count);
 			this.endTime = System.currentTimeMillis();
 			double totalTime = endTime - startTime;
-			System.err
-					.println("Total elapsed time for processing the transactions (in seconds): "
-							+ totalTime);
 			double throughput = count / totalTime;
-			System.err
-					.println("Transaction throughput (number of transactions processed per second): "
-							+ throughput);
+			System.err.println("Thread-" + threadNum + " status: " + count + ", " + totalTime + "ms, "+ throughput);
+			
 			ThreadClient.totalTransactions += count;
 			ThreadClient.totalTime += totalTime;
 
-			System.err
-					.println("Overall total number of transactions processed : "
-							+ ThreadClient.totalTransactions);
-			System.err
-					.println("Overall Total elapsed time for processing the transactions (in seconds): "
-							+ ThreadClient.totalTime);
-			System.err
-					.println("Transaction throughput (number of transactions processed per second): "
-							+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
 			ThreadClient.Threadcount++;
-			if(ThreadClient.Threadcount == ThreadClient.clientCount) {
+			if (ThreadClient.Threadcount == ThreadClient.clientCount) {
+				System.err
+						.println("Overall total number of transactions processed : "
+								+ ThreadClient.totalTransactions);
+				System.err
+						.println("Overall Total elapsed time for processing the transactions (in ms): "
+								+ ThreadClient.totalTime);
+				System.err
+						.println("Transaction throughput (number of transactions processed per ms): "
+								+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
 				ThreadClient.close();
 				System.exit(0);
 			}
@@ -174,7 +163,6 @@ public class TransThread extends Thread {
 	}
 
 	public void start() {
-		System.out.println("Starting " + threadName);
 		if (t == null) {
 			t = new Thread(this, threadName);
 			t.start();
