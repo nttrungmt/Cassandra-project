@@ -1,0 +1,11 @@
+SELECT c_name, o_id, o_entry_d, o_carrier_id, i_id, ol_supply_w_id, ol_qty, ol_amount, ol_delivery_d FROM orders WHERE w_id = 1 and d_id = 1 and c_id = 2;
+
+SELECT c_balance FROM customer WHERE w_id = 1 and d_id = 1 and c_id = 2;
+
+// last order -> check what happens if we use limit 15
+
+or 
+SELECT c_name, o_id, o_entry_d, o_carrier_id, i_id, ol_supply_w_id, ol_qty, ol_amount, ol_delivery_d FROM orders WHERE w_id = 1 and d_id = 1 order by o_id desc limit 1;
+
+
+

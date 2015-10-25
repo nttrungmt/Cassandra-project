@@ -1,0 +1,29 @@
+INSERT INTO orders (w_id, d_id, o_id, ol_id, c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info) VALUES (1,1,1,1,1,1,'abc',10.0, 12.0, 2, 0, '2015-01-01 00:00:00.0', dateOf(now()), 1, 'ab cd ef', 2, 0, 'abcd');
+
+
+INSERT INTO orders (w_id, d_id, o_id, ol_id, c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info) VALUES (1,3,3,1,1,1,'abc',10.0, 12.0, 2, 0, '2015-01-01 00:00:00.0', dateOf(now()), 1, 'ab cd ef', 2, 0, 'abcd');
+
+
+INSERT INTO orders (w_id, d_id, o_id, ol_id, c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info) VALUES (3,6,10,1,1,1,'abc',10.0, 12.0, 2, 0, '2015-01-01 00:00:00.0', dateOf(now()), 1, 'ab cd ef', 2, 0, 'abcd');
+
+
+INSERT INTO orders (w_id, d_id, o_id, ol_id, c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info) VALUES (1,10,1,1,1,1,'abc',10.0, 12.0, 2, 0, '2015-01-01 00:00:00.0', dateOf(now()), 1, 'ab cd ef', 2, 0, 'abcd');
+
+
+INSERT INTO orders (w_id, d_id, o_id, ol_id, c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info) VALUES (1,51,51,1,1,1,'abc',10.0, 12.0, 2, 0, '2015-01-01 00:00:00.0', dateOf(now()), 1, 'ab cd ef', 2, 0, 'abcd');
+
+
+		/*Iterator<Row> it = results.iterator();
+		while (it.hasNext()) {
+			Row row = it.next();
+			System.out.println("Customer's Name : " + row.getString("c_name.c_first") + row.getString("c_name.c_middle") + row.getString("c_name.c_last"));
+			System.out.println("Balance : " + row.getDouble("c_balance"));
+			// for the last order
+			System.out.println("Last Order ID : " + row.getInt("o_id"));
+			System.out.println("Last Order's Entry : " + row.getDate("o_entry_d"));
+			System.out.println("Last Order's Carrier Identifier : " + row.getInt("o_carrier_id"));
+			// For each item in last order
+			System.out.println("Order List:");
+			System.out.println("---------------------------------------------------------------------------------");
+			System.out.println(String.format("%-20s\t%-20s\t%-20s\t%-20s\t%-20s", ("ol_i_id"), ("ol_supply_w_id"), ("ol_quantity"), ("ol_amount"),("ol_delivery_d")));
+		}*/

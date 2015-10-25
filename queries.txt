@@ -181,7 +181,7 @@ d_id int,
 o_id int, 
 c_name frozen<cname>,
 c_balance double,
-o_entry_id timestamp,
+o_entry_d timestamp,
 o_carrier_id int,
 orderList list <frozen <orderdeliverylist> >,
 PRIMARY KEY ((c_id, d_id, w_id),o_id)
@@ -189,7 +189,11 @@ PRIMARY KEY ((c_id, d_id, w_id),o_id)
 WITH CLUSTERING ORDER BY (o_id DESC);
 
 
-INSERT INTO d8keyspace.orderstatus ( c_id, o_id, c_balance , c_name, o_carrier_id , o_entry_id, orderlist) VALUES (1,1,0,'abc', 1, dateOf(now()), null);
+INSERT INTO d8keyspace.orderstatus ( c_id, w_id, d_id, o_id, c_name, c_balance , o_entry_d, o_carrier_id , orderlist) VALUES (1,1,1, 1, {c_first:'abc', c_middle:'a', c_last: 'd'}, 0.0, dateOf(now()), 0, 
+[ { ol_i_id: 1, i_name :'ab', ol_supply_w_id: 2, ol_quantity:3.0, ol_amount:4.0, ol_delivery_d: dateOf(now()), s_quantity:1 },
+{ol_i_id: 3, i_name :'asb', ol_supply_w_id: 2, ol_quantity:34.0, ol_amount:4.0, s_quantity:1 ,ol_delivery_d:  dateOf(now())}]);
+
+SELECT c_name, c_balance, o_id, o_entry_d, o_carrier_id, orderList FROM d8keyspace.orderstatus  WHERE c_id = 1 and w_id = 1 and d_id = 1 LIMIT 1;
 
 update orderstatus SET c_balance = 20.0, o_carrier_id = 3 where c_id = 1;
 
