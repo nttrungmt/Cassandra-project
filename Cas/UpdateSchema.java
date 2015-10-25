@@ -1,5 +1,3 @@
-//package threadtrans;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
@@ -26,11 +24,11 @@ public class UpdateSchema {
 	public void createSchema() {
 		// new key space based on D8
 		session.execute("CREATE KEYSPACE IF NOT EXISTS d8keyspace WITH replication "
-				+ "= {'class':'SimpleStrategy', 'replication_factor':2};");
+				+ "= {'class':'SimpleStrategy', 'replication_factor':1};");
 
 		// new key space based on D40
 		session.execute("CREATE KEYSPACE IF NOT EXISTS d40keyspace WITH replication "
-				+ "= {'class':'SimpleStrategy', 'replication_factor':2};");
+				+ "= {'class':'SimpleStrategy', 'replication_factor':1};");
 
 	}
 

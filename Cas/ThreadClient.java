@@ -1,17 +1,17 @@
-//package threadtrans;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 
 public class ThreadClient {
-	private Cluster cluster;
+	private static Cluster cluster;
 	private static Session session;
 	private static String keyspace;
 	private static int nodeCount;
 	public static int totalTransactions=0;
 	public static float totalTime=0;
+	public static int Threadcount=0;
+	static int clientCount=0;
 
 	// function to connect to the cluster
 	public void connect(String node) {
@@ -28,7 +28,7 @@ public class ThreadClient {
 	}
 
 	//Close cluster
-	public void close() {
+	public static void close() {
 		cluster.close();
 	}
 
@@ -67,7 +67,7 @@ public class ThreadClient {
 		}
 
 		// Validating the entered client number
-		int clientCount = Integer.parseInt(args[2]);
+		clientCount = Integer.parseInt(args[2]);
 		if (clientCount < 1 || clientCount > 100) {
 			System.out
 					.println("Value received:"
