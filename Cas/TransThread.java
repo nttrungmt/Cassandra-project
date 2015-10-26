@@ -32,7 +32,7 @@ public class TransThread extends Thread {
 		BufferedReader br = null;
 
 		try {
-			String filename = String.valueOf(threadNum) + ".txt";
+			String filename = String.valueOf(3) + ".txt";
 			Transaction transaction = new Transaction(session, keyspace, node);
 			br = new BufferedReader(new FileReader(filename));
 
@@ -56,20 +56,18 @@ public class TransThread extends Thread {
 					int w_id = Integer.parseInt(words[2]);
 					int d_id = Integer.parseInt(words[3]);
 					int m = Integer.parseInt(words[4]);
-					System.out.println("m:" + m);
 					// read the items in the new order
-					/*
-					 * Set<orderDeliveryList> orderSet = new
-					 * HashSet<orderDeliveryList>(); for (int j = i + 1; j <= (m
-					 * + i); j++) { String[] localValues =
-					 * (myList.get(j)).split(","); orderDeliveryList orderlist =
-					 * new orderDeliveryList( Integer.parseInt(localValues[0]),
-					 * null, Integer.parseInt(localValues[1]),
-					 * Double.parseDouble(localValues[2]), 0.0, 0.0, null);
-					 * orderSet.add(orderlist); }
-					 */
+					int[] item_num = new int[m];
+					int[] supplier_warehouse = new int[m];
+					long[] quantity = new long[m];
+					for (int j = 0; j < (m); j++) {
+						String[] vals = (myList.get(j+i+1)).split(",");
+						item_num[j] = Integer.parseInt(vals[0]);
+						supplier_warehouse[j] = Integer.parseInt(vals[1]);
+						quantity[j] = (long)(Integer.parseInt(vals[2]));
+					}
 					i = i + m;
-					transaction.newOrder(w_id, d_id, c_id, m);// , orderSet);
+					transaction.newOrder(w_id, d_id, c_id, m, item_num, supplier_warehouse, quantity);
 					count++;
 				} else if ((words[0]).equals("P")) {
 					// Payment transaction -> C_W_ID, C_D_ID, C_ID, PAYMENT.

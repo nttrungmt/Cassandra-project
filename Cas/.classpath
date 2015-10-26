@@ -2,18 +2,18 @@
 <classpath>
 	<classpathentry kind="src" path=""/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/cassandra-driver-core-2.0.2.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/cassandra-driver-dse-2.0.2.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/bsh-2.0b4.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/guava-16.0.1.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/jcommander-1.27.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/log4j-1.2.17.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/lz4-1.2.0.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/metrics-core-3.0.2.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/netty-3.9.0.Final.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/slf4j-api-1.7.5.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/slf4j-log4j12-1.7.6.jar"/>
-	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/Project/cassandra-java-driver-2.0.2/lib/snappy-java-1.0.5.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/cassandra-driver-core-2.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/cassandra-driver-dse-2.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/bsh-2.0b4.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/guava-16.0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/jcommander-1.27.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/lz4-1.2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/metrics-core-3.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/netty-3.9.0.Final.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/slf4j-api-1.7.5.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/slf4j-log4j12-1.7.6.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2/lib/snappy-java-1.0.5.jar"/>
+	<classpathentry kind="lib" path="/Users/shailza/Documents/gitRepo/Cassandra-project/cas/cassandra-java-driver-2.0.2"/>
 	<classpathentry kind="output" path=""/>
 </classpath>

@@ -5,3 +5,9 @@ iid[] = SELECT i_id FROM orders WHERE w_id = 1 AND d_id = 1 and o_id >=(N-L);
 qty[] = SELECT s_qty FROM stocks WHERE w_id= 1 and i_id IN iid ;
 
 if(qty[i]<L) count++;
+
+S,1,1,500,3
+w_id = 1
+d_id = 1
+t = 500
+l = 3

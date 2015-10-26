@@ -1,0 +1,43 @@
+LOAD CSV INTO DATA MODEL TABLES:
+
+CUSTOMERMASTER
+select c_w_id, c_d_id, c_id, 
+CONCAT_WS('', c_first, ' ', c_middle, ' ', c_last) as c_name, 
+CONCAT_WS('', c_street_1, ';', c_street_2, ';', c_city, ';', c_state, ';', c_zip) as c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, 
+CONCAT_WS('', w_street_1, ';', w_street_2, ';', w_city, ';', w_state, ';', w_zip) as w_addr, w_tax, w_name,
+CONCAT_WS('', d_street_1, ';', d_street_2, ';', d_city, ';', d_state, ';', d_zip) as d_addr, d_tax, d_name, c_data
+from customer join warehouse on c_w_id = w_id
+	join district on c_d_id = d_id and w_id = d_w_id
+into outfile '/home/vedraj/customermaster.csv' fields terminated by ',' lines terminated by '\n';
+
+ITEMSTOCKMASTER
+select s_w_id, s_i_id, i_name, i_price, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, i_im_id, i_data
+from stock join item on i_id = s_i_id
+into outfile '/home/vedraj/itemstockmaster.csv' fields terminated by ',' lines terminated by '\n';
+
+ORDER
+select o_w_id, o_d_id, o_id, ol_id, o_c_id, i_id, i_name, i_price, ol_amount, ol_quantity, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, 
+CONCAT_WS('', c_first, ' ', c_middle, ' ', c_last) as c_name, o_ol_cnt, o_all_local, ol_dist_info
+from order1 join orderLine on ol_w_id = o_w_id and ol_d_id = o_d_id and o_id = ol_o_id 
+	    join item on ol_i_id = i_id 
+	    join customer on c_id = o_c_id and c_w_id = o_w_id and c_d_id = o_w_id
+into outfile '/home/vedraj/ordercsv.csv' fields terminated by ',' lines terminated by '\n';
+
+WAREHOUSE
+select w_id, w_ytd * 100 from warehouse
+into outfile '/home/vedraj/warehousecsv.csv' fields terminated by ',' lines terminated by '\n';
+
+DISTRICT
+select d_w_id, d_id, d_next_o_id, d_ytd * 100 from district
+into outfile '/home/vedraj/districtcsv.csv' fields terminated by ',' lines terminated by '\n';
+
+STOCKS
+select s_w_id, s_i_id, s_quantity * 100, s_order_cnt * 100, s_remote_cnt * 100, s_ytd * 100 from stock into outfile '/home/vedraj/stockscsv.csv' fields terminated by ',' lines terminated by '\n';
+
+CUSTOMER
+select c_w_id, c_d_id, c_id, c_ytd_payment * 100, c_balance * 100, c_payment_cnt * 100, c_delivery_cnt * 100 from customer
+into outfile '/home/vedraj/customercsv.csv' fields terminated by ',' lines terminated by '\n';
+
+
+
+

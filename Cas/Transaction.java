@@ -16,6 +16,13 @@ public class Transaction {
 	private Session session;
 	private String keyspace;
 	private int node;
+	private PreparedStatement neworder_d_sel;
+    private PreparedStatement neworder_d_up;
+    private PreparedStatement neworder_c_sel;
+    private PreparedStatement neworder_s_sel;
+    private PreparedStatement neworder_s_up;
+    private PreparedStatement neworder_i_sel;
+    private PreparedStatement neworder_o_in;
 	private PreparedStatement payment_w_up;
 	private PreparedStatement payment_d_up;
 	private PreparedStatement payment_c_up;
@@ -30,7 +37,6 @@ public class Transaction {
 	private PreparedStatement stock_o_sel;
 	private PreparedStatement stock_s_sel;
 	private PreparedStatement popular_o_sel;
-	private PreparedStatement popular_s_sel;
 
 	// constructor
 	Transaction(Session session, String keyspace, int node) {
@@ -38,6 +44,15 @@ public class Transaction {
 		this.keyspace = keyspace;
 		this.node = node;
 
+		//New Order Prepared Statements
+        neworder_d_sel = session.prepare("SELECT d_next_oid FROM " + keyspace + ".district WHERE w_id = ? and d_id = ?");
+        neworder_d_up = session.prepare("UPDATE " + keyspace + ".district SET d_next_oid = d_next_oid + 1 WHERE w_id = ? and d_id = ?");
+        neworder_c_sel = session.prepare("SELECT c_name,d_tax,w_tax,c_discount,c_credit FROM " + keyspace + ".customermaster WHERE w_id = ? and d_id=? and c_id=?");
+        neworder_s_sel = session.prepare("SELECT s_qty FROM " + keyspace + ".stocks WHERE w_id = ? and i_id = ?");
+        neworder_s_up = session.prepare("UPDATE " + keyspace + ".stocks SET s_qty = s_qty -?, s_ytd = s_ytd + ?,s_order_cnt=s_order_cnt + 1,s_remote_cnt=s_remote_cnt+? WHERE w_id = ? and i_id = ?");
+        neworder_i_sel = session.prepare("SELECT i_name,i_price FROM " + keyspace + ".itemstockmaster WHERE i_id = ? and w_id=?");
+        neworder_o_in = session.prepare("INSERT into " + keyspace + ".orders( w_id , d_id , o_id , ol_id , c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info ) values (?,?,?,?,?,?,?,?,?,?,?,?,dateOf(now()),?,?,?,?,?)");
+		
 		// Payment Prepared Statements
 		payment_w_up = session.prepare("UPDATE " + keyspace + ".warehouse SET w_ytd = w_ytd + ? WHERE w_id = ?;");
 		payment_d_up = session.prepare("UPDATE " + keyspace + ".district SET d_ytd = d_ytd + ? WHERE w_id = ? and d_id = ?;");
@@ -66,7 +81,97 @@ public class Transaction {
 	}
 
 	// New Order Transaction function
-	void newOrder(int w_id, int d_id, int c_id, int m) {
+	void newOrder(int W_ID, int D_ID, int C_ID, int NUM_ITEMS,int[] ITEM_NUMBER,int[] SUPPLIER_WAREHOUSE,long[] QUANTITY) {
+		System.out.println("New Order transaction!");
+		System.out.println("w_id:" + W_ID + ", d_id:" + D_ID + ", c_id:" + C_ID);
+
+		long N = 0;
+        int o_id=0;
+		int Qnty=0;
+		double w_tax = 0, d_tax = 0, c_discount = 0;
+		String cname=null,c_credit=null;
+		
+        BoundStatement nextoidstmt = new BoundStatement(neworder_d_sel);
+	    ResultSet result = session.execute(nextoidstmt.bind(W_ID, D_ID));
+		for (Row row : result) {
+			N = row.getLong(0);
+        }
+		
+        BoundStatement updnextoid = new BoundStatement(neworder_d_up);
+        session.execute(updnextoid.bind(W_ID, D_ID));
+		
+		
+		BoundStatement custstmt = new BoundStatement(neworder_c_sel);
+		result = session.execute(custstmt.bind(W_ID,D_ID,C_ID));
+		for (Row row : result) {
+			cname = row.getString(0);
+			d_tax = row.getDouble(1);
+			w_tax = row.getDouble(2);
+			c_discount = row.getDouble(3);
+			c_credit= row.getString(4);
+		  }
+
+		int O_W_ID = W_ID;
+        int O_D_ID = D_ID;
+        long O_ID = N;
+        int O_C_ID = C_ID;
+        int O_CARRIER_ID = 0;	
+        int O_OL_CNT = NUM_ITEMS;
+        int O_ALL_LOCAL = 0;	
+		double TOTAL_AMOUNT = 0;
+        long sqty[] = new long[NUM_ITEMS];
+		double iprice[]=new double[NUM_ITEMS];
+		double ADJUSTED_QTY[]= new double[NUM_ITEMS];
+		long remoteCnt=0;
+		double ITEM_AMOUNT[]= new double[NUM_ITEMS];
+		String iname[]=new String[NUM_ITEMS];
+		
+		String OL_DIST_INFO=null;
+		for(int i =0; i< NUM_ITEMS ; i++) {
+		
+		  
+		  BoundStatement stocksstmt = new BoundStatement(neworder_s_sel);
+	      result =  session.execute(stocksstmt.bind(W_ID, ITEM_NUMBER[i]));
+		  for (Row row : result) {
+			sqty[i] = row.getLong(0);
+		  }
+		 
+   		 
+		
+		 ADJUSTED_QTY[i] = sqty[i] - QUANTITY[i];
+		  ADJUSTED_QTY[i] = ((ADJUSTED_QTY[i] < 10) ? (ADJUSTED_QTY[i] + 91) : ADJUSTED_QTY[i]); 
+         int s_wid=SUPPLIER_WAREHOUSE[i];
+		
+		 if(s_wid!=W_ID){
+          	remoteCnt=1;
+            O_ALL_LOCAL=1;		
+		}		 
+          	 
+		 
+		   BoundStatement stocksstmt1 = new BoundStatement(neworder_s_up);
+		   result =  session.execute(stocksstmt1.bind(QUANTITY[i],QUANTITY[i],remoteCnt,s_wid, ITEM_NUMBER[i]));
+		   
+		
+		BoundStatement itemstmt = new BoundStatement(neworder_i_sel);
+		result = session.execute(itemstmt.bind(ITEM_NUMBER[i],W_ID));
+		for (Row row : result) {
+			iname[i] = row.getString(0);
+			iprice[i] = row.getDouble(1);
+		  }
+	    ITEM_AMOUNT[i] = QUANTITY[i] * iprice[i];
+        TOTAL_AMOUNT += ITEM_AMOUNT[i];
+		
+		  OL_DIST_INFO="S_DIST_"+D_ID;
+		  o_id=(int)N;
+		  Qnty=(int)QUANTITY[i];
+		 
+		BoundStatement ordstmt = new BoundStatement(neworder_o_in);
+		result = session.execute(ordstmt.bind(W_ID,D_ID,o_id,i,C_ID,ITEM_NUMBER[i],iname[i],iprice[i],ITEM_AMOUNT[i],Qnty,0,null,SUPPLIER_WAREHOUSE[i],cname,O_OL_CNT,O_ALL_LOCAL,OL_DIST_INFO));
+		  
+        }   
+
+  TOTAL_AMOUNT = TOTAL_AMOUNT * (1 + d_tax + w_tax) * (1 - c_discount);		
+
 	}
 
 	// Payment Transaction function
@@ -280,10 +385,17 @@ public class Transaction {
 		for(Map.Entry<Integer, String> entry : popID.entrySet()) {
 			int iid = entry.getKey();
 			String iname = entry.getValue();
-			System.out.println("Item Name: " + iname);
-			
-		}
-		
-	
+			System.out.printf("Item Name: " + iname);
+			int count = 0;
+			for(int j = 0; j< resList.size(); j++) {
+				String[] vals = (resList.get(j)).split(",");
+				// if the item is present
+				if((iname.equals(vals[6])) && (iid == Integer.parseInt(vals[4]))) {
+					count++;
+				}
+			}
+			System.out.println(", Number of orders in S containing the popular item:" + count);
+		}	
 	}
+	
 }
