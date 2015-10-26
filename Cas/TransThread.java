@@ -32,7 +32,7 @@ public class TransThread extends Thread {
 		BufferedReader br = null;
 
 		try {
-			String filename = String.valueOf(3) + ".txt";
+			String filename = String.valueOf(threadNum) + ".txt";
 			Transaction transaction = new Transaction(session, keyspace, node);
 			br = new BufferedReader(new FileReader(filename));
 
