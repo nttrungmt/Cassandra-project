@@ -1,18 +1,68 @@
 #!/bin/bash
-filename = "0.txt"
-count = wc -l $filename
-start = 0
-fact = 2
-co = 0
-while $count > 0; do
+filename="itemstockmaster.csv"
+wc -l $filename > temp
+read count zzz < temp
+count=$((count+1))
+echo $count
+start=0
+fact=1000000
+co=0
+while (( count!=0 ))
+do
+	start=$((start+fact))
+	echo `head -n $start $filename | tail -$fact > itemstockmaster$co.csv`
+	co=$((co+1))
+	echo $co
+	count=$((count-fact))
 	echo $count
-	$start = $start + $fact
-	head -n $fact $filename | tail -$fact > a$co.csv
-	$co = $co+1
-	$count = $count - $fact
-	if [$count < $fact]
+	if (( count < fact ))
 		then
-		tail -$count > a$co.csv
-		$count = 0
+		echo `tail -$count $filename > itemstockmaster$co.csv`
+		count=0
 	fi
-done; 
+done
+
+
+filename="ordercsv.csv"
+wc -l $filename > temp
+read count zzz < temp
+count=$((count+1))
+echo $count
+start=0
+co=0
+while (( count!=0 ))
+do
+	start=$((start+fact))
+	echo `head -n $start $filename | tail -$fact > order$co.csv`
+	co=$((co+1))
+	echo $co
+	count=$((count-fact))
+	echo $count
+	if (( count < fact ))
+		then
+		echo `tail -$count $filename > order$co.csv`
+		count=0
+	fi
+done
+
+filename="stocks.csv"
+wc -l $filename > temp
+read count zzz < temp
+count=$((count+1))
+echo $count
+start=0
+co=0
+while (( count!=0 ))
+do
+	start=$((start+fact))
+	echo `head -n $start $filename | tail -$fact > stocks$co.csv`
+	co=$((co+1))
+	echo $co
+	count=$((count-fact))
+	echo $count
+	if (( count < fact ))
+		then
+		echo `tail -$count $filename > stocks$co.csv`
+		count=0
+	fi
+done
