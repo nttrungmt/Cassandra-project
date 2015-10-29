@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -49,7 +51,7 @@ public class Transaction {
         neworder_d_up = session.prepare("UPDATE " + keyspace + ".district SET d_next_oid = d_next_oid + 1 WHERE w_id = ? and d_id = ?");
         neworder_c_sel = session.prepare("SELECT c_name,d_tax,w_tax,c_discount,c_credit FROM " + keyspace + ".customermaster WHERE w_id = ? and d_id=? and c_id=?");
         neworder_s_sel = session.prepare("SELECT s_qty FROM " + keyspace + ".stocks WHERE w_id = ? and i_id = ?");
-        neworder_s_up = session.prepare("UPDATE " + keyspace + ".stocks SET s_qty = s_qty -?, s_ytd = s_ytd + ?,s_order_cnt=s_order_cnt + 1,s_remote_cnt=s_remote_cnt+? WHERE w_id = ? and i_id = ?");
+        neworder_s_up = session.prepare("UPDATE " + keyspace + ".stocks SET s_qty = s_qty -?, s_ytd = s_ytd + ?,s_order_cnt=s_order_cnt + 100,s_remote_cnt=s_remote_cnt+? WHERE w_id = ? and i_id = ?");
         neworder_i_sel = session.prepare("SELECT i_name,i_price FROM " + keyspace + ".itemstockmaster WHERE i_id = ? and w_id=?");
         neworder_o_in = session.prepare("INSERT into " + keyspace + ".orders( w_id , d_id , o_id , ol_id , c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info ) values (?,?,?,?,?,?,?,?,?,?,?,?,dateOf(now()),?,?,?,?,?)");
 		
@@ -81,97 +83,115 @@ public class Transaction {
 	}
 
 	// New Order Transaction function
-	void newOrder(int W_ID, int D_ID, int C_ID, int NUM_ITEMS,int[] ITEM_NUMBER,int[] SUPPLIER_WAREHOUSE,long[] QUANTITY) {
+	void newOrder(int W_ID, int D_ID, int C_ID, int NUM_ITEMS, int[] ITEM_NUMBER, int[] SUPPLIER_WAREHOUSE,long[] QUANTITY) {
 		System.out.println("New Order transaction!");
 		System.out.println("w_id:" + W_ID + ", d_id:" + D_ID + ", c_id:" + C_ID);
 
 		long N = 0;
-        int o_id=0;
-		int Qnty=0;
+		int o_id = 0;
+		int Qnty = 0;
 		double w_tax = 0, d_tax = 0, c_discount = 0;
-		String cname=null,c_credit=null;
-		
-        BoundStatement nextoidstmt = new BoundStatement(neworder_d_sel);
-	    ResultSet result = session.execute(nextoidstmt.bind(W_ID, D_ID));
+		String cname = null, c_credit = null;
+		long updQty[] = new long[NUM_ITEMS];
+		System.out.println("New Order Transaction!");
+		BoundStatement nextoidstmt = new BoundStatement(neworder_d_sel);
+		ResultSet result = session.execute(nextoidstmt.bind(W_ID, D_ID));
 		for (Row row : result) {
 			N = row.getLong(0);
-        }
-		
-        BoundStatement updnextoid = new BoundStatement(neworder_d_up);
-        session.execute(updnextoid.bind(W_ID, D_ID));
-		
-		
+		}
+
+		BoundStatement updnextoid = new BoundStatement(neworder_d_up);
+		session.execute(updnextoid.bind(W_ID, D_ID));
+
 		BoundStatement custstmt = new BoundStatement(neworder_c_sel);
-		result = session.execute(custstmt.bind(W_ID,D_ID,C_ID));
+		result = session.execute(custstmt.bind(W_ID, D_ID, C_ID));
 		for (Row row : result) {
 			cname = row.getString(0);
 			d_tax = row.getDouble(1);
 			w_tax = row.getDouble(2);
 			c_discount = row.getDouble(3);
-			c_credit= row.getString(4);
-		  }
+			c_credit = row.getString(4);
+		}
+		String lastName = cname.substring(cname.lastIndexOf(" ") + 1);
+		System.out.println("Customer's identifier :W_ID:" + W_ID + ", D_ID:" + D_ID + ", C_ID:" + C_ID + ", LastName:"
+				+ lastName + ", Credit:" + c_credit + ", Discount:" + c_discount);
+		System.out.println("Warehouse tax rate:" + w_tax + ", District tax rate:" + d_tax);
+
+		System.out.println(
+				"Order number:" + N + ", Entry Date:" + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 
 		int O_W_ID = W_ID;
-        int O_D_ID = D_ID;
-        long O_ID = N;
-        int O_C_ID = C_ID;
-        int O_CARRIER_ID = 0;	
-        int O_OL_CNT = NUM_ITEMS;
-        int O_ALL_LOCAL = 0;	
+		int O_D_ID = D_ID;
+		long O_ID = N;
+		int O_C_ID = C_ID;
+		int O_CARRIER_ID = 0;
+		int O_OL_CNT = NUM_ITEMS;
+		int O_ALL_LOCAL = 1;
 		double TOTAL_AMOUNT = 0;
-        long sqty[] = new long[NUM_ITEMS];
-		double iprice[]=new double[NUM_ITEMS];
-		double ADJUSTED_QTY[]= new double[NUM_ITEMS];
-		long remoteCnt=0;
-		double ITEM_AMOUNT[]= new double[NUM_ITEMS];
-		String iname[]=new String[NUM_ITEMS];
-		
-		String OL_DIST_INFO=null;
-		for(int i =0; i< NUM_ITEMS ; i++) {
-		
-		  
-		  BoundStatement stocksstmt = new BoundStatement(neworder_s_sel);
-	      result =  session.execute(stocksstmt.bind(W_ID, ITEM_NUMBER[i]));
-		  for (Row row : result) {
-			sqty[i] = row.getLong(0);
-		  }
-		 
-   		 
-		
-		 ADJUSTED_QTY[i] = sqty[i] - QUANTITY[i];
-		  ADJUSTED_QTY[i] = ((ADJUSTED_QTY[i] < 10) ? (ADJUSTED_QTY[i] + 91) : ADJUSTED_QTY[i]); 
-         int s_wid=SUPPLIER_WAREHOUSE[i];
-		
-		 if(s_wid!=W_ID){
-          	remoteCnt=1;
-            O_ALL_LOCAL=1;		
-		}		 
-          	 
-		 
-		   BoundStatement stocksstmt1 = new BoundStatement(neworder_s_up);
-		   result =  session.execute(stocksstmt1.bind(QUANTITY[i],QUANTITY[i],remoteCnt,s_wid, ITEM_NUMBER[i]));
-		   
-		
-		BoundStatement itemstmt = new BoundStatement(neworder_i_sel);
-		result = session.execute(itemstmt.bind(ITEM_NUMBER[i],W_ID));
-		for (Row row : result) {
-			iname[i] = row.getString(0);
-			iprice[i] = row.getDouble(1);
-		  }
-	    ITEM_AMOUNT[i] = QUANTITY[i] * iprice[i];
-        TOTAL_AMOUNT += ITEM_AMOUNT[i];
-		
-		  OL_DIST_INFO="S_DIST_"+D_ID;
-		  o_id=(int)N;
-		  Qnty=(int)QUANTITY[i];
-		 
-		BoundStatement ordstmt = new BoundStatement(neworder_o_in);
-		result = session.execute(ordstmt.bind(W_ID,D_ID,o_id,i,C_ID,ITEM_NUMBER[i],iname[i],iprice[i],ITEM_AMOUNT[i],Qnty,0,null,SUPPLIER_WAREHOUSE[i],cname,O_OL_CNT,O_ALL_LOCAL,OL_DIST_INFO));
-		  
-        }   
+		long sqty[] = new long[NUM_ITEMS];
+		double iprice[] = new double[NUM_ITEMS];
+		double ADJUSTED_QTY[] = new double[NUM_ITEMS];
+		long remoteCnt = 0;
+		double ITEM_AMOUNT[] = new double[NUM_ITEMS];
+		String iname[] = new String[NUM_ITEMS];
 
-  TOTAL_AMOUNT = TOTAL_AMOUNT * (1 + d_tax + w_tax) * (1 - c_discount);		
+		for (int i = 0; i < NUM_ITEMS; i++) {
+			if (SUPPLIER_WAREHOUSE[i] != W_ID) {
+				O_ALL_LOCAL = 0;
+				break;
+			}
+		}
 
+		String OL_DIST_INFO = null;
+		System.out.println("Ordered items are:");
+		for (int i = 0; i < NUM_ITEMS; i++) {
+
+			BoundStatement stocksstmt = new BoundStatement(neworder_s_sel);
+			result = session.execute(stocksstmt.bind(SUPPLIER_WAREHOUSE[i], ITEM_NUMBER[i]));
+			for (Row row : result) {
+				sqty[i] = row.getLong(0)/100;
+			}
+
+			ADJUSTED_QTY[i] = sqty[i] - QUANTITY[i];
+			if (ADJUSTED_QTY[i] < 10) {
+				updQty[i] = QUANTITY[i] - 91;
+			} else {
+				updQty[i] = QUANTITY[i];
+			}
+			int s_wid = SUPPLIER_WAREHOUSE[i];
+
+			if (s_wid != W_ID) {
+				remoteCnt = 100;
+
+			}
+
+			BoundStatement stocksstmt1 = new BoundStatement(neworder_s_up);
+			result = session.execute(stocksstmt1.bind(updQty[i], QUANTITY[i]*100, remoteCnt, s_wid, ITEM_NUMBER[i]));
+
+			BoundStatement itemstmt = new BoundStatement(neworder_i_sel);
+			result = session.execute(itemstmt.bind(ITEM_NUMBER[i], s_wid));
+			for (Row row : result) {
+				iname[i] = row.getString(0);
+				iprice[i] = row.getDouble(1);
+			}
+			ITEM_AMOUNT[i] = QUANTITY[i] * iprice[i];
+			TOTAL_AMOUNT += ITEM_AMOUNT[i];
+
+			OL_DIST_INFO = "S_DIST_" + D_ID;
+			o_id = (int) N;
+			Qnty = (int) QUANTITY[i];
+
+			BoundStatement ordstmt = new BoundStatement(neworder_o_in);
+			result = session.execute(ordstmt.bind(W_ID, D_ID, o_id, i + 1, C_ID, ITEM_NUMBER[i], iname[i], iprice[i],
+					ITEM_AMOUNT[i], Qnty, 0, null, SUPPLIER_WAREHOUSE[i], cname, O_OL_CNT, O_ALL_LOCAL, OL_DIST_INFO));
+			System.out.println("ITEM_NUMBER:" + ITEM_NUMBER[i] + ", I_NAME:" + iname[i] + ", SUPPLIER_WAREHOUSE:"
+					+ SUPPLIER_WAREHOUSE[i] + ", QUANTITY:" + Qnty + ", OL_AMOUNT:" + ITEM_AMOUNT[i] + ", S_QUANTITY:"
+					+ sqty[i]);
+
+		}
+
+		TOTAL_AMOUNT = TOTAL_AMOUNT * (1 + d_tax + w_tax) * (1 - c_discount);
+		System.out.println("NUM_ITEMS:" + NUM_ITEMS + ", Total amount for order:" + TOTAL_AMOUNT);
 	}
 
 	// Payment Transaction function

@@ -1,5 +1,3 @@
-package test;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,9 +8,10 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 
 public class InsertIntoCounters {
+    public static String fileN = "/Users/shailza/Documents/gitRepo/Cassandra-project/data/D8/";
 
-	public static void insertWarehouse() {
-		String fileName = "/home/vedraj/data/D8/warehousecsv.csv";
+	public void insertWarehouse() {
+		String fileName = fileN + "warehousecsv.csv";
 
 		// This will reference one line at a time
 		String line = null;
@@ -61,8 +60,8 @@ public class InsertIntoCounters {
 		System.out.println("Warehouse Updated.");
 	}
 
-	public static void insertDistrict() {
-		String fileName = "/home/vedraj/data/D8/districtcsv.csv";
+	public void insertDistrict() {
+		String fileName = fileN + "districtcsv.csv";
 
 		// This will reference one line at a time
 		String line = null;
@@ -115,8 +114,8 @@ public class InsertIntoCounters {
 		System.out.println("District Updated.");
 	}
 
-	public static void insertStocks() {
-		String fileName = "/home/vedraj/data/D8/stockscsv.csv";
+	public void insertStocks() {
+		String fileName = fileN + "stockscsv.csv";
 
 		// This will reference one line at a time
 		String line = null;
@@ -183,8 +182,8 @@ public class InsertIntoCounters {
 		System.out.println("Stocks Updated.");
 	}
 
-	public static void insertCustomer() {
-		String fileName = "/home/vedraj/data/D8/customercsv.csv";
+	public void insertCustomer() {
+		String fileName = fileN + "customercsv.csv";
 
 		// This will reference one line at a time
 		String line = null;
@@ -252,4 +251,12 @@ public class InsertIntoCounters {
 		System.out.println("Customer Updated.");
 	}
 
+
+	public static void main(String[] args) {
+		InsertIntoCounters is = new InsertIntoCounters();
+		is.insertWarehouse();
+		is.insertDistrict();
+		is.insertStocks();
+		is.insertCustomer();
+	}
 }

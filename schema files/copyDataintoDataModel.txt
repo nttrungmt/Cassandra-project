@@ -1,7 +1,7 @@
-copy customermaster (w_id, d_id, c_id, c_name, c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, w_addr, w_tax, w_name, d_addr, d_tax, d_name, c_data) from '/home/vedraj/csvfiles/customermaster.csv';
+copy customermaster (w_id, d_id, c_id, c_name, c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, w_addr, w_tax, w_name, d_addr, d_tax, d_name, c_data) from '/Users/shailza/Documents/gitRepo/Cassandra-project/data/D8/customermaster.csv';
 
-copy itemstockmaster (s_w_id, s_i_id, i_name, i_price, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, i_im_id, i_data) from '/home/vedraj/csvfiles/itemstockmaster.csv';
+copy itemstockmaster (w_id, i_id, i_name, i_price, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, i_imid, i_data) from '/Users/shailza/Documents/gitRepo/Cassandra-project/data/D8/itemstockmaster.csv';
 
-copy orders (o_w_id, o_d_id, o_id, ol_id, o_c_id, i_id, i_name, i_price, ol_amount, ol_quantity, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/home/vedraj/csvfiles/ordercsv.csv';
+copy orders (w_id, d_id, o_id, ol_id, c_id, i_id, i_name, i_price, ol_amount, ol_qty, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/Users/shailza/Documents/gitRepo/Cassandra-project/data/D8/ordercsv.csv';
 
 warehouse, district, customer, stocks will be updated by the java file:
