@@ -13,16 +13,14 @@ public class TransThread extends Thread {
 	private int threadNum;
 	private Session session;
 	private String keyspace;
-	private int node;
-	private long startTime;
-	private long endTime;
+	private double startTime;
+	private double endTime;
 
-	TransThread(String name, int num, Session session, String keyspace, int node) {
+	TransThread(String name, int num, Session session, String keyspace) {
 		threadName = name;
 		threadNum = num;
 		this.session = session;
 		this.keyspace = keyspace;
-		this.node = node;
 		this.startTime = System.currentTimeMillis();
 	}
 
@@ -33,7 +31,7 @@ public class TransThread extends Thread {
 
 		try {
 			String filename = String.valueOf(threadNum) + ".txt";
-			Transaction transaction = new Transaction(session, keyspace, node);
+			Transaction transaction = new Transaction(session, keyspace);
 			br = new BufferedReader(new FileReader(filename));
 
 			String sCurrentLine;
@@ -128,7 +126,7 @@ public class TransThread extends Thread {
 	}
 
 	public void run() {
-		int count = 1;
+		int count = 0;
 		try {
 			count = this.readFile();
 
@@ -136,24 +134,41 @@ public class TransThread extends Thread {
 			System.out.println("Thread-" + threadNum + " interrupted.");
 		} finally {
 			this.endTime = System.currentTimeMillis();
-			double totalTime = endTime - startTime;
+			double totalTime = (endTime - startTime)/1000;
 			double throughput = count / totalTime;
-			System.err.println("Thread-" + threadNum + " status: " + count + ", " + totalTime + "ms, "+ throughput);
+			double avgTime = totalTime / count;
+			System.err.println("Thread-" + threadNum + "-> transactions:" + count + ", time: " + totalTime + "sec, throughput: "+ throughput + ", Average Time: " + avgTime);
 			
 			ThreadClient.totalTransactions += count;
-			ThreadClient.totalTime += totalTime;
+			ThreadClient.sumTime += totalTime;
 
 			ThreadClient.Threadcount++;
+			
 			if (ThreadClient.Threadcount == ThreadClient.clientCount) {
-				System.err
-						.println("Overall total number of transactions processed : "
-								+ ThreadClient.totalTransactions);
-				System.err
-						.println("Overall Total elapsed time for processing the transactions (in ms): "
-								+ ThreadClient.totalTime);
-				System.err
-						.println("Transaction throughput (number of transactions processed per ms): "
-								+ ((ThreadClient.totalTransactions) / (ThreadClient.totalTime)));
+				//sum of times taken by all transactions
+				ThreadClient.sumTime = (ThreadClient.sumTime)/1000;
+				//total time = end time - start time
+				double total = ((System.currentTimeMillis()) - ThreadClient.startTime)/1000;
+				
+				double totalThroughput = ThreadClient.totalTransactions / total;
+				double totalAvgTime = ThreadClient.sumTime / ThreadClient.totalTransactions;
+				double avgTimeClient = ThreadClient.sumTime / ThreadClient.clientCount;
+				double responseTime = total / ThreadClient.clientCount;
+				
+				System.out.println("Overall total number of transactions processed : "+ ThreadClient.totalTransactions);
+				System.out.println("Overall Total time for processing the transactions (in sec): " + total);
+				System.out.println("Transaction throughput (number of transactions processed per sec): "+ totalThroughput);
+				System.out.println("Average time per transactions (in sec): : "+ totalAvgTime);
+				System.out.println("Average time per client (in sec): : "+ avgTimeClient);
+				System.out.println("Response time per client (in sec): : "+ responseTime);
+			
+				System.err.println("Overall total number of transactions processed : "+ ThreadClient.totalTransactions);
+                                System.err.println("Overall Total time for processing the transactions (in sec): " + total);
+                                System.err.println("Transaction throughput (number of transactions processed per sec): "+ totalThroughput);
+                                System.err.println("Average time per transactions (in sec): : "+ totalAvgTime);
+                                System.err.println("Average time per client (in sec): : "+ avgTimeClient);
+                                System.err.println("Response time per client (in sec): : "+ responseTime);
+	
 				ThreadClient.close();
 				System.exit(0);
 			}

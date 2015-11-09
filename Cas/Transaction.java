@@ -17,7 +17,6 @@ public class Transaction {
 	// variables
 	private Session session;
 	private String keyspace;
-	private int node;
 	private PreparedStatement neworder_d_sel;
     private PreparedStatement neworder_d_up;
     private PreparedStatement neworder_c_sel;
@@ -25,13 +24,16 @@ public class Transaction {
     private PreparedStatement neworder_s_up;
     private PreparedStatement neworder_i_sel;
     private PreparedStatement neworder_o_in;
+    private PreparedStatement neworder_del_in;
 	private PreparedStatement payment_w_up;
 	private PreparedStatement payment_d_up;
 	private PreparedStatement payment_c_up;
 	private PreparedStatement payment_cm_sel;
 	private PreparedStatement payment_c_sel;
+	private PreparedStatement del_d_sel;
 	private PreparedStatement del_o_sel;
 	private PreparedStatement del_o_up;
+	private PreparedStatement del_d_up;
 	private PreparedStatement del_c_up;
 	private PreparedStatement orderst_o_sel;
 	private PreparedStatement orderst_c_sel;
@@ -41,10 +43,9 @@ public class Transaction {
 	private PreparedStatement popular_o_sel;
 
 	// constructor
-	Transaction(Session session, String keyspace, int node) {
+	Transaction(Session session, String keyspace) {
 		this.session = session;
 		this.keyspace = keyspace;
-		this.node = node;
 
 		//New Order Prepared Statements
         neworder_d_sel = session.prepare("SELECT d_next_oid FROM " + keyspace + ".district WHERE w_id = ? and d_id = ?");
@@ -53,8 +54,9 @@ public class Transaction {
         neworder_s_sel = session.prepare("SELECT s_qty FROM " + keyspace + ".stocks WHERE w_id = ? and i_id = ?");
         neworder_s_up = session.prepare("UPDATE " + keyspace + ".stocks SET s_qty = s_qty -?, s_ytd = s_ytd + ?,s_order_cnt=s_order_cnt + 100,s_remote_cnt=s_remote_cnt+? WHERE w_id = ? and i_id = ?");
         neworder_i_sel = session.prepare("SELECT i_name,i_price FROM " + keyspace + ".itemstockmaster WHERE i_id = ? and w_id=?");
-        neworder_o_in = session.prepare("INSERT into " + keyspace + ".orders( w_id , d_id , o_id , ol_id , c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info ) values (?,?,?,?,?,?,?,?,?,?,?,?,dateOf(now()),?,?,?,?,?)");
-		
+        neworder_o_in = session.prepare("INSERT into " + keyspace + ".orders( w_id , d_id , o_id , ol_id , c_id , i_id , i_name , i_price , ol_amount , ol_qty , o_carrier_id , ol_delivery_d , o_entry_d , ol_supply_w_id , c_name , o_ol_cnt , o_all_local , ol_dist_info ) values (?,?,?,?,?,?,?,?,?,?,?,'2000-01-01 00:00:00+0000',dateOf(now()),?,?,?,?,?)");
+        neworder_del_in = session.prepare("INSERT into " + keyspace + ".delivery ( w_id, d_id , o_id , o_carrier_id) VALUES (?,?,?,0);");
+        		
 		// Payment Prepared Statements
 		payment_w_up = session.prepare("UPDATE " + keyspace + ".warehouse SET w_ytd = w_ytd + ? WHERE w_id = ?;");
 		payment_d_up = session.prepare("UPDATE " + keyspace + ".district SET d_ytd = d_ytd + ? WHERE w_id = ? and d_id = ?;");
@@ -64,13 +66,15 @@ public class Transaction {
 		payment_c_sel = session.prepare("SELECT c_balance FROM " + keyspace + ".customer WHERE w_id = ? and d_id = ? and c_id = ?;");
 
 		// Delivery Prepared Statements
-		del_o_sel = session.prepare("SELECT o_id,c_id,ol_id,ol_amount FROM " + keyspace + ".orders WHERE w_id = ? and d_id =? and o_carrier_id = 0;");
+		del_d_sel = session.prepare("SELECT o_id FROM " + keyspace + ".delivery WHERE w_id = ? and d_id =? and o_carrier_id = 0 LIMIT 1;");
+		del_o_sel = session.prepare("SELECT c_id,ol_id,ol_amount FROM " + keyspace + ".orders WHERE w_id = ? and d_id =? and o_id = ? and o_carrier_id = 0;");
 		del_o_up = session.prepare("UPDATE " + keyspace + ".orders SET o_carrier_id = ?, ol_delivery_d = dateOf(now()) WHERE w_id =? and d_id = ? and o_id =? and ol_id = ?;");
-		del_c_up = session.prepare("UPDATE " + keyspace + ".customer SET c_balance = c_balance + ?, c_delivery_cnt = c_delivery_cnt+1 WHERE w_id = ? and d_id = ? and c_id = ?;");
+		del_d_up = session.prepare("UPDATE " + keyspace + ".delivery SET o_carrier_id = ? WHERE w_id =? and d_id = ? and o_id =?;");
+		del_c_up = session.prepare("UPDATE " + keyspace + ".customer SET c_balance = c_balance + ?, c_delivery_cnt = c_delivery_cnt+100 WHERE w_id = ? and d_id = ? and c_id = ?;");
 
 		// Order Status Prepared Statements
 		orderst_o_sel = session.prepare("SELECT c_name, o_id, o_entry_d, o_carrier_id, i_id, ol_supply_w_id, ol_qty, ol_amount, ol_delivery_d FROM "
-						+ keyspace + ".orders WHERE w_id = ? and d_id = ? and c_id = ?;");
+						+ keyspace + ".orders WHERE w_id = ? and d_id = ? and c_id = ? LIMIT 1;");
 		orderst_c_sel = session.prepare("SELECT c_balance FROM " + keyspace + ".customer WHERE w_id = ? and d_id = ? and c_id = ?;");
 
 		// stock level Prepared Statements
@@ -84,25 +88,26 @@ public class Transaction {
 
 	// New Order Transaction function
 	void newOrder(int W_ID, int D_ID, int C_ID, int NUM_ITEMS, int[] ITEM_NUMBER, int[] SUPPLIER_WAREHOUSE,long[] QUANTITY) {
-		System.out.println("New Order transaction!");
-		System.out.println("w_id:" + W_ID + ", d_id:" + D_ID + ", c_id:" + C_ID);
-
 		long N = 0;
 		int o_id = 0;
 		int Qnty = 0;
 		double w_tax = 0, d_tax = 0, c_discount = 0;
 		String cname = null, c_credit = null;
 		long updQty[] = new long[NUM_ITEMS];
-		System.out.println("New Order Transaction!");
 		BoundStatement nextoidstmt = new BoundStatement(neworder_d_sel);
 		ResultSet result = session.execute(nextoidstmt.bind(W_ID, D_ID));
 		for (Row row : result) {
 			N = row.getLong(0);
 		}
 
+		//update nextoid 
 		BoundStatement updnextoid = new BoundStatement(neworder_d_up);
 		session.execute(updnextoid.bind(W_ID, D_ID));
 
+		//Inserting in delivery table
+		BoundStatement stmt_del_in = new BoundStatement(neworder_del_in);
+		session.execute(stmt_del_in.bind(W_ID, D_ID,((int)N)));
+		
 		BoundStatement custstmt = new BoundStatement(neworder_c_sel);
 		result = session.execute(custstmt.bind(W_ID, D_ID, C_ID));
 		for (Row row : result) {
@@ -113,18 +118,10 @@ public class Transaction {
 			c_credit = row.getString(4);
 		}
 		String lastName = cname.substring(cname.lastIndexOf(" ") + 1);
-		System.out.println("Customer's identifier :W_ID:" + W_ID + ", D_ID:" + D_ID + ", C_ID:" + C_ID + ", LastName:"
-				+ lastName + ", Credit:" + c_credit + ", Discount:" + c_discount);
-		System.out.println("Warehouse tax rate:" + w_tax + ", District tax rate:" + d_tax);
+		String output = "Customer's identifier :W_ID:" + W_ID + ", D_ID:" + D_ID + ", C_ID:" + C_ID + ", LastName:"
+				+ lastName + ", Credit:" + c_credit + ", Discount:" + c_discount + "Warehouse tax rate:" + w_tax + ", District tax rate:" + d_tax + 
+				"Order number:" + N + ", Entry Date:" + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date());
 
-		System.out.println(
-				"Order number:" + N + ", Entry Date:" + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
-
-		int O_W_ID = W_ID;
-		int O_D_ID = D_ID;
-		long O_ID = N;
-		int O_C_ID = C_ID;
-		int O_CARRIER_ID = 0;
 		int O_OL_CNT = NUM_ITEMS;
 		int O_ALL_LOCAL = 1;
 		double TOTAL_AMOUNT = 0;
@@ -141,9 +138,10 @@ public class Transaction {
 				break;
 			}
 		}
+		
 
 		String OL_DIST_INFO = null;
-		System.out.println("Ordered items are:");
+		output = output + "Ordered items are:";
 		for (int i = 0; i < NUM_ITEMS; i++) {
 
 			BoundStatement stocksstmt = new BoundStatement(neworder_s_sel);
@@ -166,7 +164,7 @@ public class Transaction {
 			}
 
 			BoundStatement stocksstmt1 = new BoundStatement(neworder_s_up);
-			result = session.execute(stocksstmt1.bind(updQty[i], QUANTITY[i]*100, remoteCnt, s_wid, ITEM_NUMBER[i]));
+			result = session.execute(stocksstmt1.bind(updQty[i]*100, QUANTITY[i]*100, remoteCnt, s_wid, ITEM_NUMBER[i]));
 
 			BoundStatement itemstmt = new BoundStatement(neworder_i_sel);
 			result = session.execute(itemstmt.bind(ITEM_NUMBER[i], s_wid));
@@ -182,23 +180,23 @@ public class Transaction {
 			Qnty = (int) QUANTITY[i];
 
 			BoundStatement ordstmt = new BoundStatement(neworder_o_in);
+			//
 			result = session.execute(ordstmt.bind(W_ID, D_ID, o_id, i + 1, C_ID, ITEM_NUMBER[i], iname[i], iprice[i],
-					ITEM_AMOUNT[i], Qnty, 0, null, SUPPLIER_WAREHOUSE[i], cname, O_OL_CNT, O_ALL_LOCAL, OL_DIST_INFO));
-			System.out.println("ITEM_NUMBER:" + ITEM_NUMBER[i] + ", I_NAME:" + iname[i] + ", SUPPLIER_WAREHOUSE:"
+					ITEM_AMOUNT[i], Qnty, 0, SUPPLIER_WAREHOUSE[i], cname, O_OL_CNT, O_ALL_LOCAL, OL_DIST_INFO));
+			output = output + "ITEM_NUMBER:" + ITEM_NUMBER[i] + ", I_NAME:" + iname[i] + ", SUPPLIER_WAREHOUSE:"
 					+ SUPPLIER_WAREHOUSE[i] + ", QUANTITY:" + Qnty + ", OL_AMOUNT:" + ITEM_AMOUNT[i] + ", S_QUANTITY:"
-					+ sqty[i]);
-
+					+ sqty[i];
+			
 		}
 
 		TOTAL_AMOUNT = TOTAL_AMOUNT * (1 + d_tax + w_tax) * (1 - c_discount);
-		System.out.println("NUM_ITEMS:" + NUM_ITEMS + ", Total amount for order:" + TOTAL_AMOUNT);
+		System.out.println(output + "NUM_ITEMS:" + NUM_ITEMS + ", Total amount for order:" + TOTAL_AMOUNT);
 	}
 
 	// Payment Transaction function
 	void payment(int w_id, int d_id, int c_id, double pay) {
 		Long payment = new Long((long) (pay*100));
-		System.out.println("Payment transaction!");
-		System.out.println("Customer's identifier :w_id:" + w_id + ", d_id:" + d_id + ", c_id:" + c_id);
+		String output = "Customer's identifier :w_id:" + w_id + ", d_id:" + d_id + ", c_id:" + c_id + ", Payment amount:" + pay;
 		BoundStatement bound_w_up = new BoundStatement(payment_w_up);
 		session.execute(bound_w_up.bind(payment, w_id));
 		
@@ -216,53 +214,48 @@ public class Transaction {
 		
 		
 		for (Row row : results) {
-			System.out.println("Customer's Name : " + row.getString("c_name") + ", Address : " + row.getString("c_addr") + ", Credit" + row.getString("c_credit") + ", Credit_lim: " + row.getDouble("c_credit_lim") + ", Discount:" + row.getDouble("c_discount"));
+			output = output + "Customer's Name : " + row.getString("c_name") + ", Address : " + row.getString("c_addr") + ", Credit" + row.getString("c_credit") + ", Credit_lim: " + row.getDouble("c_credit_lim") + ", Discount:" + row.getDouble("c_discount");
 			for (Row row1 : results1) {
-				System.out.println("Customer balance:" + ((double) (row1.getLong("c_balance")))/100);
+				output = output + ", Customer balance:" + ((double) (row1.getLong("c_balance")))/100;
 			}
-			System.out.println("Warehouse’s address : " + row.getString("w_addr"));
-			System.out.println("District’s address : " + row.getString("d_addr"));
+			output = output + "Warehouse’s address : " + row.getString("w_addr") + ", District’s address : " + row.getString("d_addr");
 		}
-		
-		System.out.println("Payment amount:" + pay);
+		System.out.println(output);
 
 	}
 
 	// Delivery Transaction function
 	void delivery(int w_id, int carrier_id) {
 
-		System.out.println("Delivery transaction!");
-		System.out.println("w_id:" + w_id + ", o_carrier_id:" + carrier_id);
 		for (int i = 1; i <= 10; i++) {
-			BoundStatement bound_w_up = new BoundStatement(del_o_sel);
-			ResultSet results = session.execute(bound_w_up.bind(w_id, i));
-			
-			TreeSet<Integer> sortedSet = new TreeSet<Integer>();
-			List <String> resList = new ArrayList<String>();
+			BoundStatement bound_d_sel = new BoundStatement(del_d_sel);
+			ResultSet results = session.execute(bound_d_sel.bind(w_id, i));
+			int o_id = 0;
 			for (Row row : results) {
-				sortedSet.add(row.getInt("o_id"));
-				String temp = row.getInt("o_id") + "," + row.getInt("c_id") + "," + row.getInt("ol_id") + "," + row.getDouble("ol_amount");
-				resList.add(temp);
+				o_id = row.getInt("o_id");
 			}
-			if (!(sortedSet.isEmpty())) {
-				int o_id = sortedSet.first();
-				int c_id = 0;
-				double B = 0.0;
+			//update delivery table for o_carrier_id
+			BoundStatement bound_d_up = new BoundStatement(del_d_up);
+			session.execute(bound_d_up.bind(carrier_id, w_id, i, o_id));
+			
+			// update order table for o_carrier_id
+			BoundStatement bound_o_sel = new BoundStatement(del_o_sel);
+			results = session.execute(bound_o_sel.bind(w_id, i, o_id));
+			
+			double B = 0.0;
+			int c_id =0;
+			for (Row row : results) {
+				c_id = row.getInt("c_id");
+				int ol_id = row.getInt("ol_id");
+				B = B +  row.getDouble("ol_amount");
 				
-				for (int j = 0; j < resList.size(); j++) {
-					String[] words = (resList.get(j)).split(",");
-					if (o_id == Integer.parseInt(words[0])) {
-						c_id = Integer.parseInt(words[1]);
-						B = B + Double.parseDouble(words[3]);
-						BoundStatement bound_o_up = new BoundStatement(del_o_up);
-						session.execute(bound_o_up.bind(carrier_id, w_id, i,
-								o_id, Integer.parseInt(words[2])));
-					}
-				}
-				B = B/100;
-				BoundStatement bound_c_up = new BoundStatement(del_c_up);
-				session.execute(bound_c_up.bind((long)B, w_id, i, c_id));
+				BoundStatement bound_o_up = new BoundStatement(del_o_up);
+				session.execute(bound_o_up.bind(carrier_id, w_id, i,
+								o_id, ol_id));
 			}
+			B = B / 100;
+			BoundStatement bound_c_up = new BoundStatement(del_c_up);
+			session.execute(bound_c_up.bind((long)B, w_id, i, c_id));
 		}
 
 	}
@@ -270,33 +263,26 @@ public class Transaction {
 	// order status transaction
 	void orderStatus(int w_id, int d_id, int c_id) {
 
-		System.out.println("order status transaction!");
-		System.out.println("w_id:" + w_id + ", d_id:" + d_id + ", c_id:" + c_id);
-
 		BoundStatement bound_o_sel = new BoundStatement(orderst_o_sel);
 		ResultSet results = session.execute(bound_o_sel.bind(w_id, d_id, c_id));
 
 		BoundStatement bound_c_sel = new BoundStatement(orderst_c_sel);
 		ResultSet results1 = session.execute(bound_c_sel.bind(w_id, d_id, c_id));
-
+		String output = "";
 		for (Row row : results) {
-			System.out.println("Customer's Name : " + row.getString("c_name"));
+			output = output + "Customer's Name : " + row.getString("c_name");
 			for (Row row1 : results1) {
-				System.out.println("Balance: " + ((double) (row1.getLong("c_balance")))/100);
+				output = output + ", Balance: " + ((double) (row1.getLong("c_balance")))/100;
 			}
 			// for the last order
-			System.out.println("Customer’s last order : ");
-			System.out.println("Order number : "+ row.getInt("o_id") + ", Entry date and time: " + row.getDate("o_entry_d") + ", Carrier identifier: " + row.getInt("o_carrier_id"));
-			System.out.println("Item number: " + row.getInt("i_id") + ", Supplying warehouse number : " + row.getInt("ol_supply_w_id") + 
-					", Quantity ordered: " + row.getInt("ol_qty") + ", Total price for ordered item: " + row.getDouble("ol_amount") + ", Data and time of delivery:" + row.getDate("ol_delivery_d"));
+			output = output + "Customer’s last order : " + ", Order number : "+ row.getInt("o_id") + ", Entry date and time: " + row.getDate("o_entry_d") + ", Carrier identifier: " + row.getInt("o_carrier_id") + ", Item number: " + row.getInt("i_id") + ", Supplying warehouse number : " + row.getInt("ol_supply_w_id") + 
+					", Quantity ordered: " + row.getInt("ol_qty") + ", Total price for ordered item: " + row.getDouble("ol_amount") + ", Data and time of delivery:" + row.getDate("ol_delivery_d");
 		}
+		System.out.println(output);
 	}
 
 	// Print Stock level transaction
 	void stockLevel(int w_id, int d_id, int t, int l) {
-		System.out.println("Stock level transaction!");
-		System.out.println("w_id:" + w_id + ", d_id:" + d_id + ", t:" + t
-				+ ", l:" + l);
 
 		// query to get next_oid
 		int next_oid = 0;
@@ -332,15 +318,14 @@ public class Transaction {
 				count++;
 		}
 
-		System.out.println("Total number of items where its stock quantity is below the threshold: " + count);
+		System.out.println("w_id:" + w_id + ", d_id:" + d_id + ", t:" + t
+				+ ", l:" + l + "Total number of items where its stock quantity is below the threshold: " + count);
 
 	}
 
 	// Print popular item transaction details
 	void popularItem(int w_id, int d_id, int l) {
-		System.out.println("Popular Item transaction!");
-		System.out.println("District identifiers !! w_id:" + w_id + ", d_id:" + d_id);
-		System.out.println("Number of last orders to be examined:" + l);
+		String output = "District identifiers !! w_id:" + w_id + ", d_id:" + d_id + ", Number of last orders to be examined:" + l;
 
 		// query to next_oid
 		int next_oid = 0;
@@ -393,8 +378,8 @@ public class Transaction {
 				String[] vals = (resList.get(j)).split(",");
 				
 				if((curOid == Integer.parseInt(vals[0])) && (tempMax == Integer.parseInt(vals[5]))) {
-					if(i==0) System.out.println("Order number: " + curOid + ", entry date and time: " + vals[2] + ", Customer name: " + vals[1]);
-					System.out.println("Item name:" + vals[6] + ", Quantity ordered: " + tempMax);
+					if(i==0) output = output + "Order number: " + curOid + ", entry date and time: " + vals[2] + ", Customer name: " + vals[1];
+					output = output + "Item name:" + vals[6] + ", Quantity ordered: " + tempMax;
 					i++;
 				}
 			}
@@ -405,7 +390,7 @@ public class Transaction {
 		for(Map.Entry<Integer, String> entry : popID.entrySet()) {
 			int iid = entry.getKey();
 			String iname = entry.getValue();
-			System.out.printf("Item Name: " + iname);
+			output = output + "Item Name: " + iname;
 			int count = 0;
 			for(int j = 0; j< resList.size(); j++) {
 				String[] vals = (resList.get(j)).split(",");
@@ -414,8 +399,9 @@ public class Transaction {
 					count++;
 				}
 			}
-			System.out.println(", Number of orders in S containing the popular item:" + count);
-		}	
+			output = output + ", Number of orders in S containing the popular item:" + count;
+		}
+		System.out.println(output);
 	}
 	
 }

@@ -1,7 +1,9 @@
-copy customermaster (w_id, d_id, c_id, c_name, c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, w_addr, w_tax, w_name, d_addr, d_tax, d_name, c_data) from '/tmp/group10/D40data/customermaster*.csv';
+copy customermaster (w_id, d_id, c_id, c_name, c_addr, c_phone, c_since, c_credit, c_credit_lim, c_discount, w_addr, w_tax, w_name, d_addr, d_tax, d_name, c_data) from '/temp/group10/D8data/customermaster.csv';
 
-copy itemstockmaster (w_id, i_id, i_name, i_price, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, i_imid, i_data) from '/tmp/group10/D40data/itemstockmaster*.csv';
+copy itemstockmaster (w_id, i_id, i_name, i_price, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, s_data, i_imid, i_data) from '/temp/group10/D8data/itemstockmaster.csv';
 
-copy orders (w_id, d_id, o_id, ol_id, c_id, i_id, i_name, i_price, ol_amount, ol_qty, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/tmp/group10/D40data/order*.csv';
+copy orders (w_id, d_id, o_id, ol_id, c_id, i_id, i_name, i_price, ol_amount, ol_qty, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/temp/group10/D8data/order0.csv';
+copy orders (w_id, d_id, o_id, ol_id, c_id, i_id, i_name, i_price, ol_amount, ol_qty, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/temp/group10/D8data/order1.csv';
+copy orders (w_id, d_id, o_id, ol_id, c_id, i_id, i_name, i_price, ol_amount, ol_qty, o_carrier_id, ol_delivery_d, o_entry_d, ol_supply_w_id, c_name, o_ol_cnt, o_all_local, ol_dist_info) from '/temp/group10/D8data/order2.csv';
 
-warehouse, district, customer, stocks will be updated by the java file:
+copy delivery (w_id, d_id, o_id, o_carrier_id) from '/temp/group10/D8data/delivery.csv';
